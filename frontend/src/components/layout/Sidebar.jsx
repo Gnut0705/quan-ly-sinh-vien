@@ -41,6 +41,22 @@ const Sidebar = () => {
           <span className="nav-icon">🏫</span>
           <span>Quản lý Lớp học</span>
         </NavLink>
+
+        <NavLink
+          to="/courses"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <span className="nav-icon">📚</span>
+          <span>Quản lý Môn học</span>
+        </NavLink>
+
+        <NavLink
+          to="/grades"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <span className="nav-icon">📝</span>
+          <span>{role === 'student' ? 'Kết quả học tập' : 'Quản lý Điểm số'}</span>
+        </NavLink>
       </nav>
 
       {/* User Information Footer */}

@@ -10,6 +10,9 @@ import Dashboard from './pages/Dashboard';
 import StudentList from './pages/StudentList';
 import ClassList from './pages/ClassList';
 import ClassDetail from './pages/ClassDetail';
+import CourseList from './pages/CourseList';
+import GradeList from './pages/GradeList';
+import StudentTranscript from './pages/StudentTranscript';
 import Unauthorized from './pages/Unauthorized';
 import './styles/index.css';
 
@@ -35,8 +38,11 @@ function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="students" element={<StudentList />} />
+              <Route path="students/:id/grades" element={<StudentTranscript />} />
               <Route path="classes" element={<ClassList />} />
               <Route path="classes/:id" element={<ClassDetail />} />
+              <Route path="courses" element={<CourseList />} />
+              <Route path="grades" element={<GradeList />} />
               <Route path="unauthorized" element={<Unauthorized />} />
             </Route>
 

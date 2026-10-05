@@ -56,9 +56,18 @@ const StudentDetailModal = ({ isOpen, onClose, student }) => {
 
       {/* Transcript Section */}
       <div>
-        <h4 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>📊 Bảng Điểm Các Môn Học ({student.grades?.length || 0})</span>
-        </h4>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>
+            📊 Bảng Điểm Các Môn Học ({student.grades?.length || 0})
+          </h4>
+          <a
+            href={`/students/${student.id}/grades`}
+            className="btn btn-outline btn-sm"
+            style={{ fontSize: '12px', padding: '4px 10px' }}
+          >
+            Bảng điểm đầy đủ & GPA →
+          </a>
+        </div>
 
         {student.grades && student.grades.length > 0 ? (
           <div className="table-container">
