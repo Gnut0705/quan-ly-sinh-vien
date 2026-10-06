@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Modal from '../common/Modal';
 
 const StudentDetailModal = ({ isOpen, onClose, student }) => {
@@ -60,13 +61,14 @@ const StudentDetailModal = ({ isOpen, onClose, student }) => {
           <h4 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>
             📊 Bảng Điểm Các Môn Học ({student.grades?.length || 0})
           </h4>
-          <a
-            href={`/students/${student.id}/grades`}
+          <Link
+            to={`/students/${student.id}/grades`}
             className="btn btn-outline btn-sm"
             style={{ fontSize: '12px', padding: '4px 10px' }}
+            onClick={onClose}
           >
             Bảng điểm đầy đủ & GPA →
-          </a>
+          </Link>
         </div>
 
         {student.grades && student.grades.length > 0 ? (

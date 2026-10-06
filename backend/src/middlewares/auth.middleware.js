@@ -25,8 +25,13 @@ const verifyToken = async (req, res, next) => {
       });
     }
 
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('Biến môi trường JWT_SECRET chưa được cấu hình.');
+    }
+
     // Giải mã và kiểm tra token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_jwt_secret_key');
+    const decoded = jwt.verify(token, jwtSecret);
 
     // Xác thực người dùng vẫn tồn tại trong database
     const user = await UserModel.findByIdWithProfile(decoded.id);

@@ -255,9 +255,16 @@ Hệ thống cung cấp sẵn các nút chọn tài khoản kiểm thử ngay t�
 - Hỗ trợ các nút **Điền nhanh tài khoản kiểm thử** (Admin, Teacher, Student) tiện lợi khi demo.
 
 ### 2. Bảng điều khiển (`/dashboard`)
-- Thống kê các chỉ số KPI: Tổng số sinh viên, Số lượng lớp học, Tổng số môn học, Số bản ghi điểm.
-- Khối chào mừng cá nhân hóa theo từng vai trò đăng nhập.
-- Danh sách liên kết thao tác nhanh (Quick Actions) điều hướng tới các module.
+- Gọi API thống kê tập trung `GET /api/stats` (có loading spinner và xử lý lỗi kèm nút thử lại).
+- **Giao diện Admin & Teacher:**
+  - Thẻ chỉ số tổng quan: Tổng sinh viên, Số lớp học, Số môn học đào tạo, Điểm TB toàn trường.
+  - **Biểu đồ cột (Bar Chart):** Phân bố số lượng sinh viên theo từng lớp học (tương tác hover xem chi tiết).
+  - Thẻ đánh giá điểm trung bình theo từng môn học kèm thanh tiến độ phân cấp màu.
+- **Giao diện Student:**
+  - Thẻ kết quả học tập cá nhân: GPA thang 10, GPA thang 4, Tín chỉ tích lũy, Xếp loại học lực.
+  - Biểu đồ cột so sánh điểm số các môn học cá nhân.
+  - Thẻ thông tin chi tiết lớp sinh hoạt và sĩ số lớp đang theo học.
+- Danh sách liên kết thao tác nhanh (Quick Actions) điều hướng tới các module phù hợp với từng vai trò.
 
 ### 3. Quản lý Sinh viên (`/students`)
 - **Bảng danh sách:** Hiển thị Mã SV, Họ tên (avatar chữ cái đầu), Lớp, Khoa, Ngày sinh, Giới tính, Email, Số điện thoại.
@@ -324,6 +331,7 @@ Hệ thống cung cấp sẵn các nút chọn tài khoản kiểm thử ngay t�
 | | `POST` | `/api/grades` | Admin, Teacher | Nhập điểm môn học (chặn trùng kỳ -> 409) |
 | | `PUT` | `/api/grades/:id` | Admin, Teacher | Cập nhật điểm số |
 | | `DELETE`| `/api/grades/:id` | Admin, Teacher | Xóa bản ghi điểm |
+| **Stats** | `GET` | `/api/stats` | Logged In | Thống kê số lượng SV, lớp, môn, SV theo lớp, điểm TB theo môn (role-aware) |
 | **System** | `GET` | `/api/health` | Public | Kiểm tra trạng thái server & kết nối MySQL |
 
 > 📘 Chi tiết Request Body, Query Params, Response mẫu JSON vui lòng tham khảo file [docs/API.md](file:///h:/Code/QLSV/docs/API.md).

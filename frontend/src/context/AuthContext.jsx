@@ -16,6 +16,16 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Đăng xuất người dùng
+   */
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }, []);
+
   // Đồng bộ và xác thực token với server khi tải lại ứng dụng
   useEffect(() => {
     const initAuth = async () => {
@@ -46,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
-  }, []);
+  }, [logout]);
 
   /**
    * Đăng nhập người dùng
@@ -67,16 +77,6 @@ export const AuthProvider = ({ children }) => {
       const message = error.response?.data?.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại!';
       return { success: false, message };
     }
-  };
-
-  /**
-   * Đăng xuất người dùng
-   */
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
   };
 
   const value = {

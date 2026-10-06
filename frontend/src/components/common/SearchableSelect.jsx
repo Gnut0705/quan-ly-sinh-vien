@@ -18,7 +18,6 @@ const SearchableSelect = ({
   disabled = false,
   error = '',
   id,
-  name,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');

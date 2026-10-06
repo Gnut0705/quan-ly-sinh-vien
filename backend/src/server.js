@@ -8,23 +8,36 @@ const { testConnection } = require('./config/db');
 // Tải biến môi trường từ .env
 dotenv.config();
 
+// Kiểm tra biến môi trường bắt buộc JWT_SECRET
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === '') {
+  console.error('❌ [FATAL ERROR] Biến môi trường JWT_SECRET chưa được thiết lập trong file .env!');
+  console.error('👉 Vui lòng cấu hình JWT_SECRET để đảm bảo an toàn cho hệ thống xác thực JWT.');
+  process.exit(1);
+}
+
+const helmet = require('helmet');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Cấu hình CORS
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  'http://localhost:3000',
-];
+// Thêm bảo mật HTTP headers bằng Helmet
+app.use(helmet());
+
+// Cấu hình CORS: Chỉ cho phép CLIENT_URL
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim());
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Cho phép request không có origin (như cURL, Postman, mobile apps)
+      // Cho phép requests không có origin (như cURL, Postman, health check nội bộ)
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(null, true); // Trong môi trường dev, tạm thời cho phép
+      return callback(
+        new Error(`CORS blocked: Nguồn gốc yêu cầu '${origin}' không được phép bởi cấu hình CLIENT_URL.`)
+      );
     },
     credentials: true,
   })

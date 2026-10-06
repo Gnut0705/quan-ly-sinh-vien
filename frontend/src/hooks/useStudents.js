@@ -38,8 +38,8 @@ export const useStudents = (initialParams = {}) => {
       if (res.data?.success) {
         setClasses(res.data.data);
       }
-    } catch (err) {
-      console.error('Không thể tải danh sách lớp học:', err);
+    } catch {
+      // Bỏ qua lỗi danh mục lớp học, giao diện vẫn hoạt động bình thường
     }
   }, []);
 

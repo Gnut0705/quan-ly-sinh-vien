@@ -37,11 +37,14 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Chỉ logout khi không phải request đang ở trang login
-      if (!error.config.url.includes('/auth/login')) {
+      // Chỉ logout khi không phải request đang ở endpoint auth/login
+      if (!error.config?.url?.includes('/auth/login')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.dispatchEvent(new Event('auth:unauthorized'));
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

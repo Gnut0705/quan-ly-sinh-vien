@@ -61,6 +61,11 @@ class StudentController {
         });
       }
 
+      // Bảo vệ dữ liệu riêng tư: Sinh viên không được xem điểm của sinh viên khác
+      if (req.user && req.user.role === 'student' && student.user_id !== req.user.id) {
+        student.grades = [];
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Lấy thông tin sinh viên thành công.',
