@@ -21,12 +21,27 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Thêm bảo mật HTTP headers bằng Helmet
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
-// Cấu hình CORS: Chỉ cho phép CLIENT_URL
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
-  .split(',')
-  .map((origin) => origin.trim());
+// Cấu hình CORS: Cho phép CLIENT_URL và các cổng frontend phổ biến (5173, 5174)
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const allowedOrigins = clientUrl.split(',').map((origin) => origin.trim());
+
+[
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://localhost:3000',
+].forEach((origin) => {
+  if (!allowedOrigins.includes(origin)) {
+    allowedOrigins.push(origin);
+  }
+});
 
 app.use(
   cors({
