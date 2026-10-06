@@ -4,6 +4,11 @@
 - **Định dạng dữ liệu:** `application/json`
 - **Xác thực:** JSON Web Token (JWT) thông qua HTTP Header:  
   `Authorization: Bearer <your_jwt_token>`
+- **Bảo mật mạng & Headers:**
+  - **CORS:** Chỉ cho phép truy cập từ `CLIENT_URL` (mặc định: `http://localhost:5173`).
+  - **Helmet:** Tự động kích hoạt HTTP Security Headers (`X-Frame-Options`, `X-Content-Type-Options: nosniff`, CSP,...).
+  - **Rate Limiting:** Chống Brute Force endpoint `/api/auth/login` (tối đa 5 lần thử / 15 phút).
+  - **Bảo vệ dữ liệu:** 100% Prepared Statements (chống SQL Injection), tuyệt đối không trả `password_hash` hay `stack trace` về client.
 
 ---
 
@@ -17,8 +22,9 @@
 | `401 Unauthorized` | Chưa xác thực | Thiếu token, token sai hoặc token đã hết hạn. |
 | `403 Forbidden` | Không có quyền | Người dùng không đủ quyền hạn (vd: Sinh viên cố tình xóa/sửa). |
 | `404 Not Found` | Không tìm thấy | ID tài nguyên không tồn tại trên hệ thống. |
-| `409 Conflict` | Xung đột dữ liệu | Trùng lặp giá trị UNIQUE (mã SV, username, email). |
-| `500 Server Error` | Lỗi máy chủ | Lỗi nội bộ không xác định từ phía backend. |
+| `409 Conflict` | Xung đột dữ liệu | Trùng lặp giá trị UNIQUE (mã SV, username, email, lớp còn SV, môn có điểm). |
+| `429 Too Many Requests` | Vượt giới hạn yêu cầu | Quá nhiều lần thử đăng nhập thất bại (chống Brute Force). |
+| `500 Server Error` | Lỗi máy chủ | Lỗi nội bộ từ phía backend (ẩn toàn bộ stack trace khỏi client). |
 
 ---
 
@@ -82,6 +88,21 @@
     },
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
+}
+```
+
+- **Cơ chế giới hạn tốc độ (Rate Limiting - Chống Brute Force):**
+  - Giới hạn: Tối đa **5 yêu cầu trong 15 phút** từ cùng 1 địa chỉ IP.
+  - Headers trả về trong response:
+    - `RateLimit-Limit: 5`
+    - `RateLimit-Remaining: 4` (giảm dần sau mỗi lần gọi)
+    - `RateLimit-Reset: <seconds>` (số giây còn lại trước khi đặt lại hạn ngạch)
+
+- **Response `429 Too Many Requests` (Khi vượt quá 5 lần):**
+```json
+{
+  "success": false,
+  "message": "Bạn đã thử đăng nhập quá nhiều lần (tối đa 5 lần). Vui lòng thử lại sau 15 phút."
 }
 ```
 
@@ -231,6 +252,10 @@
   "message": "Không tìm thấy sinh viên có ID: 999"
 }
 ```
+
+- **Quy tắc bảo vệ quyền riêng tư:**
+  - `admin` và `teacher` luôn xem được đầy đủ thông tin cá nhân kèm mảng `grades` của sinh viên.
+  - Khi người dùng có vai trò `student` xem thông tin của một sinh viên khác trong trường, mảng `grades` sẽ được tự động ẩn thành `[]` để bảo vệ kết quả học tập cá nhân. Sinh viên chỉ thấy điểm số trong hồ sơ của chính mình.
 
 ---
 
@@ -875,9 +900,160 @@
 
 ---
 
-## 6. System & Health Check Endpoints
+## 6. Statistics & Dashboard Endpoints (Thống Kê Hệ Thống)
 
-### 6.1. Kiểm tra sức khỏe hệ thống (Health Check)
+### 6.1. Lấy dữ liệu thống kê Dashboard (Get System Statistics)
+- **Endpoint:** `GET /api/stats`
+- **Quyền:** Private (Yêu cầu đăng nhập - Phân quyền tự động theo vai trò của tài khoản)
+- **Headers:** `Authorization: Bearer <TOKEN>`
+
+#### Trường hợp A: Dành cho Admin và Teacher (Thống kê toàn trường)
+Hệ thống tổng hợp dữ liệu tổng quan, số sinh viên từng lớp (phục vụ vẽ biểu đồ cột) và điểm trung bình theo từng môn học.
+
+- **Response `200 OK`:**
+```json
+{
+  "success": true,
+  "role": "admin",
+  "message": "Lấy dữ liệu thống kê hệ thống thành công.",
+  "data": {
+    "overview": {
+      "totalStudents": 20,
+      "totalClasses": 4,
+      "totalCourses": 6,
+      "totalGrades": 24,
+      "overallAvgScore": 7.82
+    },
+    "studentsPerClass": [
+      {
+        "class_id": 1,
+        "class_name": "CNTT1-K67",
+        "faculty": "Công nghệ thông tin",
+        "school_year": "2022-2026",
+        "student_count": 5
+      },
+      {
+        "class_id": 2,
+        "class_name": "CNTT2-K67",
+        "faculty": "Công nghệ thông tin",
+        "school_year": "2022-2026",
+        "student_count": 5
+      },
+      {
+        "class_id": 3,
+        "class_name": "KTPM1-K67",
+        "faculty": "Kỹ thuật phần mềm",
+        "school_year": "2022-2026",
+        "student_count": 5
+      },
+      {
+        "class_id": 4,
+        "class_name": "HTTT1-K67",
+        "faculty": "Hệ thống thông tin",
+        "school_year": "2022-2026",
+        "student_count": 5
+      }
+    ],
+    "avgScorePerCourse": [
+      {
+        "course_id": 1,
+        "course_code": "INT1001",
+        "course_name": "Nhập môn lập trình C/C++",
+        "credits": 3,
+        "avg_score": 8.15,
+        "graded_count": 4,
+        "total_enrolled": 4
+      },
+      {
+        "course_id": 2,
+        "course_code": "INT1002",
+        "course_name": "Cấu trúc dữ liệu và giải thuật",
+        "credits": 4,
+        "avg_score": 7.45,
+        "graded_count": 4,
+        "total_enrolled": 4
+      }
+    ]
+  }
+}
+```
+
+#### Trường hợp B: Dành cho Student (Kết quả học tập cá nhân)
+Nếu tài khoản có vai trò `student`, API tự động nhận diện `user_id` và chỉ trả về thông tin lớp học, số bạn cùng lớp, GPA tích lũy và danh sách điểm các môn của chính sinh viên đó.
+
+- **Response `200 OK`:**
+```json
+{
+  "success": true,
+  "role": "student",
+  "message": "Lấy dữ liệu thống kê sinh viên thành công.",
+  "data": {
+    "isLinked": true,
+    "studentInfo": {
+      "id": 1,
+      "student_code": "SV20220001",
+      "full_name": "Nguyễn Văn An",
+      "class_id": 1,
+      "class_name": "CNTT1-K67",
+      "faculty": "Công nghệ thông tin",
+      "school_year": "2022-2026",
+      "classmates_count": 5
+    },
+    "summary": {
+      "totalCourses": 6,
+      "passedCourses": 5,
+      "totalRegisteredCredits": 19,
+      "passedCredits": 16,
+      "gpa10": 8.46,
+      "gpa4": 3.69,
+      "classification": "Giỏi"
+    },
+    "scoresPerCourse": [
+      {
+        "course_id": 1,
+        "course_code": "INT1001",
+        "course_name": "Nhập môn lập trình C/C++",
+        "credits": 3,
+        "semester": "2023.1",
+        "score": 8.5,
+        "letter_grade": "A",
+        "grade4": 4.0
+      },
+      {
+        "course_id": 4,
+        "course_code": "INT1004",
+        "course_name": "Lập trình Web nâng cao",
+        "credits": 3,
+        "semester": "2023.2",
+        "score": 9.0,
+        "letter_grade": "A",
+        "grade4": 4.0
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 7. System & Health Check Endpoints
+
+### 7.1. Chào mừng hệ thống (Root Endpoint)
+- **Endpoint:** `GET /`
+- **Quyền:** Public
+- **Response `200 OK`:**
+```json
+{
+  "success": true,
+  "message": "Chào mừng bạn đến với API Hệ Thống Quản Lý Sinh Viên!",
+  "version": "1.0.0",
+  "documentation": "/api/health"
+}
+```
+
+---
+
+### 7.2. Kiểm tra sức khỏe hệ thống (Health Check)
 - **Endpoint:** `GET /api/health`
 - **Quyền:** Public
 - **Response `200 OK`:**
@@ -886,8 +1062,8 @@
   "success": true,
   "service": "Student Management System API",
   "status": "healthy",
-  "timestamp": "2026-10-05T07:30:00.000Z",
-  "uptime": "120.5s",
+  "timestamp": "2026-10-06T02:40:00.000Z",
+  "uptime": "342.1s",
   "environment": "development",
   "database": {
     "type": "MySQL",
@@ -898,5 +1074,25 @@
 }
 ```
 
+---
 
+## 8. Quy Chuẩn Kỹ Thuật & Bảo Mật (Security Policies)
 
+Hệ thống tuân thủ nghiêm ngặt các tiêu chuẩn bảo mật hiện đại:
+
+1. **Bảo mật HTTP Headers với Helmet:**
+   - Tự động thiết lập các tiêu đề HTTP an toàn (`X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Content-Security-Policy`,...).
+2. **Kiểm soát Nguồn gốc (Strict CORS):**
+   - Chỉ cho phép các yêu cầu HTTP từ các địa chỉ được cấu hình trong `CLIENT_URL` (ví dụ: `http://localhost:5173`). Các domain khác bị từ chối truy cập ngay lập tức.
+3. **Phòng chống tấn công dò mật khẩu (Brute Force Protection):**
+   - Áp dụng `express-rate-limit` vào endpoint `POST /api/auth/login`: Tối đa **5 lần yêu cầu trong 15 phút** từ cùng 1 địa chỉ IP. Trả về `429 Too Many Requests` khi vi phạm.
+4. **Chống tấn công SQL Injection:**
+   - 100% câu truy vấn cơ sở dữ liệu qua `mysql2` đều sử dụng Prepared Statements (`?` parameter placeholders).
+   - Tham số sắp xếp `sortBy` được đối chiếu qua Whitelist tĩnh (`ALLOWED_SORT_COLUMNS`) trước khi chèn vào `ORDER BY`.
+5. **Bảo vệ dữ liệu nhạy cảm (Zero Sensitive Leakage):**
+   - Tuyệt đối không trả `password_hash` về client trong bất kỳ endpoint nào (`/login`, `/register`, `/me`,...).
+   - Xóa bỏ hoàn toàn `stack trace` trong phản hồi lỗi gửi về client để tránh rò rỉ cấu trúc hệ thống.
+6. **Xác thực cấu hình Fail-fast:**
+   - Khởi động server sẽ kiểm tra biến môi trường `JWT_SECRET`; nếu thiếu sẽ báo lỗi rõ ràng và dừng tiến trình (`process.exit(1)`) để ngăn ngừa lỗ hổng bảo mật.
+7. **Phân quyền đa tầng (RBAC - Role-Based Access Control):**
+   - Phân cấp 3 vai trò: `admin`, `teacher`, `student` với middleware `verifyToken` và `authorizeRoles` được gắn chặt chẽ trên từng route API.
